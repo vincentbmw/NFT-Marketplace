@@ -1,0 +1,25 @@
+{
+  "name": "aptos-nft-marketplace-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@ant-design/icons": "^5.5.2",
+    "@aptos-labs/ts-sdk": "^1.33.1",
+    "@aptos-labs/wallet-adapter-ant-design": "^3.0.23",
+    "@aptos-labs/wallet-adapter-react": "^3.7.9",
+    "antd": "^5.22.5",
+    "aptos": "^1.21.0",
+    "dotenv": "^16.4.5",
+    "fs": "^0.0.1-security",
+    "google-auth-library": "^9.14.2",
+    "petra-plugin-wallet-adapter": "^0.4.5",
+    "react-router-dom": "^7.0.2"
+  }
+}

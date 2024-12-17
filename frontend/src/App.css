@@ -1,0 +1,385 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+body, .App {
+  font-family: 'Orbitron', sans-serif;
+  background: linear-gradient(135deg, #0a0f2c 0%, #19193f 100%);
+  color: #ffffff;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+.App-header {
+  background: transparent;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.App-header img {
+  height: 40px;
+}
+
+.ant-layout {
+  background: transparent !important;
+}
+
+h2.ant-typography {
+  margin-bottom: 48px !important;
+}
+
+.ant-card {
+  padding: 16px;
+  min-width: 280px;
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.ant-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 0 20px rgba(15, 255, 196, 0.3);
+  border-color: #0fffc4;
+  background: rgba(15, 255, 196, 0.05) !important;
+}
+
+.ant-card-actions {
+  background: transparent !important;
+  border-top: none !important;
+}
+
+.ant-card-actions > li {
+  margin: 0 !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+.ant-card-actions > li:not(:last-child) {
+  border-right: none !important;
+}
+
+.auction-button:hover {
+  background: rgba(15, 255, 196, 0.1) !important;
+  border-color: #0fffc4 !important;
+  color: #0fffc4 !important;
+  box-shadow: 0 0 15px rgba(15, 255, 196, 0.2);
+}
+
+.ant-card-meta-title, .ant-card-meta-description, .ant-typography {
+  color: #ffffff;
+}
+
+.ant-card-meta-description, .card-text {
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+.nft-card-cover {
+  position: relative;
+  overflow: hidden;
+}
+
+.nft-card-cover img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.ant-card:hover .nft-card-cover img {
+  transform: scale(1.05);
+}
+
+.nft-card-overlay {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 30%;
+  background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+  pointer-events: none;
+}
+
+.ant-tag {
+  font-weight: bold;
+  border: none;
+  background: #00ffd5;
+  color: #000;
+}
+
+.ant-btn-primary {
+  background: rgba(15, 255, 196, 0.1) !important;
+  border: 1px solid #0fffc4 !important;
+  color: #0fffc4 !important;
+  font-weight: bold !important;
+  box-shadow: none !important;
+}
+
+.ant-btn-primary:hover {
+  background: rgba(15, 255, 196, 0.2) !important;
+  border-color: #0fffc4 !important;
+  color: #0fffc4 !important;
+}
+
+.ant-dropdown-menu-item:hover {
+  background: rgba(15, 255, 196, 0.1) !important;
+}
+
+.ant-statistic-title, .ant-radio-button-wrapper, .ant-page-header-heading-title {
+  color: #fff !important;
+}
+
+.ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
+  background: linear-gradient(45deg, #0fffc4, #0ff9fc) !important;
+  color: #000 !important;
+  border: none !important;
+}
+
+.ant-pagination-item-active a {
+  color: #0fffc4 !important;
+}
+
+.ant-modal-content {
+  background: rgba(0, 0, 30, 0.9);
+  border: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(15px);
+}
+
+.ant-modal-header, .ant-modal-title, .ant-modal-body {
+  color: #fff;
+}
+
+.ant-modal-close-x {
+  color: #fff;
+}
+
+.ant-menu-dark.ant-menu-horizontal > .ant-menu-item-selected {
+  background: linear-gradient(45deg, #0fffc4, #0ff9fc) !important;
+  color: #000 !important;
+}
+
+.ant-menu-dark.ant-menu-horizontal > .ant-menu-item > a {
+  color: #fff !important;
+}
+
+.ant-menu-dark.ant-menu-horizontal > .ant-menu-item:hover {
+  border-bottom: 2px solid #0fffc4;
+}
+
+/* Input focus states in the modal */
+.ant-input:focus, .ant-select-focused .ant-select-selector {
+  border-color: #0fffc4 !important;
+  box-shadow: 0 0 8px #0fffc4;
+}
+
+/* Tab styling */
+.ant-tabs-nav::before {
+  display: none !important;
+}
+
+.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #0fffc4 !important;
+  font-weight: bold;
+}
+
+.ant-tabs-tab:hover {
+  color: #0fffc4 !important;
+}
+
+.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #0fffc4 !important;
+  text-shadow: 0 0 10px rgba(15, 255, 196, 0.5) !important;
+}
+
+.ant-tabs-ink-bar {
+  display: none !important;
+}
+
+.mint-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(15, 255, 196, 0.4) !important;
+}
+
+.mint-button {
+  transition: all 0.3s ease !important;
+}
+
+.nft-card {
+  transition: all 0.3s ease !important;
+}
+
+.nft-card:hover {
+  transform: translateY(-5px) !important;
+  box-shadow: 0 0 20px rgba(15, 255, 196, 0.3) !important;
+  background: rgba(15, 255, 196, 0.05) !important;
+}
+
+.nft-card:hover img {
+  transform: scale(1.05);
+}
+
+.nft-card-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 30%;
+  background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+  pointer-events: none;
+}
+
+.auction-button:hover {
+  background: rgba(15, 255, 196, 0.2) !important;
+  color: #0fffc4 !important;
+  box-shadow: 0 0 15px rgba(15, 255, 196, 0.2) !important;
+}
+
+/* Tab hover effect */
+.ant-tabs-tab:hover .ant-tabs-tab-btn {
+  color: rgba(15, 255, 196, 0.8) !important;
+}
+
+/* Active tab styling */
+.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #0fffc4 !important;
+  text-shadow: 0 0 10px rgba(15, 255, 196, 0.5);
+}
+
+/* Remove Radio Button borders */
+.ant-radio-button-wrapper {
+  border: none !important;
+}
+
+.ant-radio-button-wrapper:not(:first-child)::before {
+  display: none !important;
+}
+
+/* Hover effect for radio buttons */
+.ant-radio-button-wrapper:hover {
+  color: #0fffc4 !important;
+  background: rgba(15, 255, 196, 0.1) !important;
+}
+
+/* Navbar Styles */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: transparent;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  height: 80px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.aptos-logo {
+  height: 40px;
+  transition: all 0.3s ease;
+}
+
+.desktop-menu {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.mobile-menu-button {
+  display: none;
+}
+
+.wallet-connection {
+  margin-left: 16px;
+}
+
+/* Mobile Drawer Styles */
+.mobile-drawer .ant-drawer-content {
+  background: rgba(0, 0, 30, 0.95) !important;
+  backdrop-filter: blur(10px);
+}
+
+.mobile-drawer .ant-drawer-header {
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.mobile-drawer .ant-drawer-title {
+  color: #fff;
+}
+
+.mobile-drawer .ant-drawer-close {
+  color: #fff;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .app-header {
+    padding: 0 16px;
+    height: 64px;
+  }
+
+  .aptos-logo {
+    height: 32px;
+  }
+
+  .desktop-menu {
+    display: none;
+  }
+
+  .mobile-menu-button {
+    display: block;
+  }
+
+  .wallet-connection {
+    margin-left: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-header {
+    padding: 0 12px;
+  }
+
+  .aptos-logo {
+    height: 28px;
+  }
+}
+
+.purchase-button {
+  transition: all 0.3s ease !important;
+}
+
+.purchase-button:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(15, 255, 196, 0.4) !important;
+}
+
+.ant-modal-content {
+  background: rgba(0, 0, 30, 0.95) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(15, 255, 196, 0.1) !important;
+}
+
+.ant-modal-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(15, 255, 196, 0.1) !important;
+}
+
+.ant-modal-footer {
+  border-top: 1px solid rgba(15, 255, 196, 0.1) !important;
+  padding: 16px 24px !important;
+}
+
+.ant-modal-close {
+  color: #0fffc4 !important;
+}
+
+.ant-modal-close:hover {
+  color: #fff !important;
+}
