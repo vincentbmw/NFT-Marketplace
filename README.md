@@ -165,7 +165,7 @@ npm install
 cp .env.example .env
 
 # Update environment variables
-REACT_APP_APTOS_NODE_URL=https://fullnode.devnet.aptoslabs.com/v1
+REACT_APP_APTOS_NODE_URL=https://fullnode.testnet.aptoslabs.com/v1
 REACT_APP_APTOS_NETWORK=devnet
 ```
 
