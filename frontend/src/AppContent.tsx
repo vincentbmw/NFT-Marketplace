@@ -84,9 +84,15 @@ function AppContent() {
 
       const entryFunctionPayload = {
         type: "entry_function_payload",
-        function: `${marketplaceAddr}::nft_marketplace::mint_nft`,
+        function: `${marketplaceAddr}::nft_marketplace::mint_nft_to_marketplace`,
         type_arguments: [],
-        arguments: [nameVector, descriptionVector, uriVector, values.rarity],
+        arguments: [
+          marketplaceAddr,
+          nameVector,
+          descriptionVector,
+          uriVector,
+          values.rarity
+        ],
       };
 
       const txnResponse = await (window as any).aptos.signAndSubmitTransaction(entryFunctionPayload);
@@ -100,9 +106,42 @@ function AppContent() {
       
       // Emit an event that NFT was minted
       window.dispatchEvent(new CustomEvent('nftMinted'));
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error minting NFT:", error);
-      message.error("Failed to mint NFT.");
+      
+      let errorTitle = "Minting Failed";
+      let errorMessage = "Failed to mint NFT. Please try again.";
+      
+      if (error.message?.includes('EDUPLICATE_NFT_NAME')) {
+        errorTitle = "Duplicate NFT Name";
+        errorMessage = "This NFT name is already taken. Please choose a different name for your NFT.";
+      } else if (error.message?.includes('EDUPLICATE_NFT_URI')) {
+        errorTitle = "Duplicate Image";
+        errorMessage = "This image is already being used by another NFT. Please use a different image.";
+      }
+
+      Modal.error({
+        title: errorTitle,
+        content: errorMessage,
+        okButtonProps: {
+          style: {
+            background: "rgba(15, 255, 196, 0.1)",
+            border: "1px solid #0fffc4",
+            color: "#0fffc4",
+            fontWeight: "bold",
+            height: "36px",
+            borderRadius: "8px"
+          }
+        },
+        style: {
+          top: '30%'
+        },
+        className: "custom-error-modal",
+        maskStyle: {
+          background: 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: 'blur(4px)'
+        }
+      });
     }
   };
 

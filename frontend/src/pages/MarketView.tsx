@@ -80,6 +80,10 @@ const MarketView: React.FC<MarketViewProps> = ({ marketplaceAddr }) => {
 
   const [currentTime, setCurrentTime] = useState<number>(Math.floor(Date.now() / 1000));
 
+  const [lastFetchTimestamp, setLastFetchTimestamp] = useState(0);
+  const [lastAuctionFetchTimestamp, setLastAuctionFetchTimestamp] = useState(0);
+  const FETCH_COOLDOWN = 5000; // 5 detik cooldown antara fetch
+
   const formatTimeLeft = (endTime: number): string => {
     const timeLeft = endTime - currentTime;
     if (timeLeft <= 0) return "Auction ended";
@@ -100,24 +104,34 @@ const MarketView: React.FC<MarketViewProps> = ({ marketplaceAddr }) => {
   }, []);
 
   useEffect(() => {
-    handleFetchNfts(undefined);
-    fetchAuctions();
-
-    // Add event listener for NFT minting
-    const handleNFTMinted = () => {
-      handleFetchNfts(rarity === 'all' ? undefined : rarity);
+    let isMounted = true;
+    
+    const fetchData = async () => {
+      if (!isMounted) return;
+      await Promise.all([
+        handleFetchNfts(rarity === 'all' ? undefined : rarity),
+        fetchAuctions()
+      ]);
     };
 
-    window.addEventListener('nftMinted', handleNFTMinted);
+    fetchData();
+
+    // Set interval untuk refresh data setiap 15 detik
+    const interval = setInterval(fetchData, 15000);
 
     // Cleanup
     return () => {
-      window.removeEventListener('nftMinted', handleNFTMinted);
+      isMounted = false;
+      clearInterval(interval);
     };
   }, [rarity]);
 
   const fetchAuctions = async () => {
     try {
+      // Check cooldown
+      if (Date.now() - lastAuctionFetchTimestamp < FETCH_COOLDOWN) return;
+      setLastAuctionFetchTimestamp(Date.now());
+
       const activeAuctions = await client.view({
         function: `${marketplaceAddr}::nft_marketplace::get_all_active_auctions`,
         type_arguments: [],
@@ -125,34 +139,29 @@ const MarketView: React.FC<MarketViewProps> = ({ marketplaceAddr }) => {
       });
 
       const auctionIds = Array.isArray(activeAuctions[0]) ? activeAuctions[0] : [];
-      const auctionDetails = await Promise.all(
-        auctionIds.map(async (auctionId: MoveValue) => {
-          const details = await client.view({
-            function: `${marketplaceAddr}::nft_marketplace::get_auction_details`,
-            type_arguments: [],
-            arguments: [marketplaceAddr, auctionId],
-          });
+      
+      // Batch process auctions
+      const batchSize = 5;
+      const processedAuctions = [];
+      
+      for (let i = 0; i < auctionIds.length; i += batchSize) {
+        const batch = auctionIds.slice(i, i + batchSize);
+        const batchPromises = batch.map(async (auctionId: MoveValue) => {
+          const [details, nftDetails] = await Promise.all([
+            client.view({
+              function: `${marketplaceAddr}::nft_marketplace::get_auction_details`,
+              type_arguments: [],
+              arguments: [marketplaceAddr, auctionId],
+            }),
+            client.view({
+              function: `${marketplaceAddr}::nft_marketplace::get_nft_details`,
+              arguments: [marketplaceAddr, auctionId],
+              type_arguments: [],
+            })
+          ]);
 
-          const [nftId, seller, startPrice, currentPrice, highestBidder, endTime, isActive] = details as [MoveValue, MoveValue, MoveValue, MoveValue, MoveValue, MoveValue, MoveValue];
-
-          const nftDetails = await client.view({
-            function: `${marketplaceAddr}::nft_marketplace::get_nft_details`,
-            arguments: [marketplaceAddr, nftId],
-            type_arguments: [],
-          });
-
-          const [_, __, name, description, uri, ___, ____, rarity] = nftDetails as [MoveValue, MoveValue, MoveValue, MoveValue, MoveValue, MoveValue, MoveValue, MoveValue];
-
-          const hexToString = (hex: string) => {
-            if (typeof hex !== 'string' || !hex.startsWith('0x')) {
-              return '';
-            }
-            const bytes = new Uint8Array(hex.length / 2 - 1);
-            for (let i = 2; i < hex.length; i += 2) {
-              bytes[(i-2) / 2] = parseInt(hex.substr(i, 2), 16);
-            }
-            return new TextDecoder().decode(bytes);
-          };
+          const [nftId, seller, startPrice, currentPrice, highestBidder, endTime, isActive] = details;
+          const [_, __, name, description, uri, ___, ____, rarity] = nftDetails;
 
           return {
             auction_id: Number(auctionId),
@@ -164,16 +173,24 @@ const MarketView: React.FC<MarketViewProps> = ({ marketplaceAddr }) => {
             end_time: Number(endTime),
             is_active: Boolean(isActive),
             nft_details: {
-              name: typeof name === 'string' ? hexToString(name) : '',
-              description: typeof description === 'string' ? hexToString(description) : '',
-              uri: typeof uri === 'string' ? hexToString(uri) : '',
+              name: decodeHexString(name as string),
+              description: decodeHexString(description as string),
+              uri: decodeHexString(uri as string),
               rarity: Number(rarity),
             }
           } as Auction;
-        })
-      );
+        });
 
-      setAuctions(auctionDetails);
+        const batchResults = await Promise.all(batchPromises);
+        processedAuctions.push(...batchResults);
+
+        // Add delay between batches to prevent rate limiting
+        if (i + batchSize < auctionIds.length) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      }
+
+      setAuctions(processedAuctions);
     } catch (error) {
       console.error("Error fetching auctions:", error);
     }
@@ -181,94 +198,123 @@ const MarketView: React.FC<MarketViewProps> = ({ marketplaceAddr }) => {
 
   const handleFetchNfts = async (selectedRarity: number | undefined) => {
     try {
-        const isInitialized = await client.view({
-            function: `${marketplaceAddr}::nft_marketplace::is_marketplace_initialized`,
-            type_arguments: [],
-            arguments: [marketplaceAddr],
-        });
+      // Check cooldown
+      if (Date.now() - lastFetchTimestamp < FETCH_COOLDOWN) return;
+      setLastFetchTimestamp(Date.now());
 
-        if (!isInitialized[0]) {
-            message.error("Marketplace not initialized. Please initialize first.");
-            return;
-        }
-
-        const response = await client.getAccountResource(
-            marketplaceAddr,
-            `${marketplaceAddr}::nft_marketplace::Marketplace`
-        );
-
-        if (!response || !response.data) {
-            message.error("Failed to fetch marketplace data");
-            return;
-        }
-
-        const nftList = (response.data as { nfts: Array<any> }).nfts;
-
-        const hexToUint8Array = (hexString: string): Uint8Array => {
-            if (typeof hexString !== 'string' || !hexString.startsWith('0x')) {
-                return new Uint8Array();
-            }
-            const bytes = new Uint8Array(hexString.length / 2 - 1);
-            for (let i = 2; i < hexString.length; i += 2) {
-                bytes[(i-2) / 2] = parseInt(hexString.substr(i, 2), 16);
-            }
-            return bytes;
-        };
-
-        const decodedNfts = nftList.map((nft: any) => {
-            try {
-                return {
-                    id: Number(nft.id),
-                    owner: String(nft.owner),
-                    name: typeof nft.name === 'string' ? new TextDecoder().decode(hexToUint8Array(nft.name)) : '',
-                    description: typeof nft.description === 'string' ? new TextDecoder().decode(hexToUint8Array(nft.description)) : '',
-                    uri: typeof nft.uri === 'string' ? new TextDecoder().decode(hexToUint8Array(nft.uri)) : '',
-                    price: Number(nft.price) / 100000000,
-                    for_sale: Boolean(nft.for_sale),
-                    rarity: Number(nft.rarity),
-                    in_auction: false
-                } as NFT;
-            } catch (err) {
-                console.error("Error processing NFT:", err);
-                return null;
-            }
-        }).filter((nft): nft is NFT => nft !== null);
-
-        const activeAuctions = await client.view({
-          function: `${marketplaceAddr}::nft_marketplace::get_all_active_auctions`,
+      const [isInitialized, response] = await Promise.all([
+        client.view({
+          function: `${marketplaceAddr}::nft_marketplace::is_marketplace_initialized`,
           type_arguments: [],
           arguments: [marketplaceAddr],
-        });
+        }),
+        client.getAccountResource(
+          marketplaceAddr,
+          `${marketplaceAddr}::nft_marketplace::Marketplace`
+        )
+      ]);
 
-        const auctionIds = Array.isArray(activeAuctions[0]) ? activeAuctions[0] : [];
-        const auctionNftIds = new Set();
+      if (!isInitialized[0]) {
+        message.error("Marketplace not initialized. Please initialize first.");
+        return;
+      }
 
-        for (const auctionId of auctionIds) {
+      if (!response || !response.data) {
+        message.error("Failed to fetch marketplace data");
+        return;
+      }
+
+      const nftList = (response.data as { nfts: Array<any> }).nfts;
+      
+      // Process NFTs in batches
+      const batchSize = 5;
+      const processedNfts = [];
+      
+      for (let i = 0; i < nftList.length; i += batchSize) {
+        const batch = nftList.slice(i, i + batchSize);
+        const batchNfts = batch.map(nft => {
+          try {
+            return {
+              id: Number(nft.id),
+              owner: String(nft.owner),
+              name: decodeHexString(nft.name),
+              description: decodeHexString(nft.description),
+              uri: decodeHexString(nft.uri),
+              price: Number(nft.price) / 100000000,
+              for_sale: Boolean(nft.for_sale),
+              rarity: Number(nft.rarity),
+              in_auction: false
+            } as NFT;
+          } catch (err) {
+            console.error("Error processing NFT:", err);
+            return null;
+          }
+        }).filter((nft): nft is NFT => nft !== null);
+
+        processedNfts.push(...batchNfts);
+
+        // Add delay between batches
+        if (i + batchSize < nftList.length) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      }
+
+      // Get auction status in one call
+      const activeAuctions = await client.view({
+        function: `${marketplaceAddr}::nft_marketplace::get_all_active_auctions`,
+        type_arguments: [],
+        arguments: [marketplaceAddr],
+      });
+
+      const auctionIds = Array.isArray(activeAuctions[0]) ? activeAuctions[0] : [];
+      const auctionNftIds = new Set();
+
+      // Process auction details in batches
+      for (let i = 0; i < auctionIds.length; i += batchSize) {
+        const batch = auctionIds.slice(i, i + batchSize);
+        const batchPromises = batch.map(async (auctionId) => {
           const details = await client.view({
             function: `${marketplaceAddr}::nft_marketplace::get_auction_details`,
             type_arguments: [],
             arguments: [marketplaceAddr, auctionId],
           });
-          const [nftId] = details as [MoveValue, ...any[]];
-          auctionNftIds.add(Number(nftId));
-        }
-
-        decodedNfts.forEach(nft => {
-          nft.in_auction = auctionNftIds.has(nft.id);
+          return details[0]; // nftId is first element
         });
 
-        const filteredNfts = decodedNfts.filter((nft) => 
-          nft.for_sale && (selectedRarity === undefined || nft.rarity === selectedRarity)
-        );
+        const batchResults = await Promise.all(batchPromises);
+        batchResults.forEach(nftId => auctionNftIds.add(Number(nftId)));
 
-        setNfts(filteredNfts);
+        if (i + batchSize < auctionIds.length) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      }
+
+      // Update auction status for all NFTs
+      processedNfts.forEach(nft => {
+        nft.in_auction = auctionNftIds.has(nft.id);
+      });
+
+      // Filter NFTs based on criteria
+      const filteredNfts = processedNfts.filter((nft) => {
+        const forSaleCondition = nft.for_sale;
+        const rarityCondition = selectedRarity === undefined || nft.rarity === selectedRarity;
+        return forSaleCondition && rarityCondition;
+      });
+
+      setNfts(filteredNfts);
     } catch (error) {
-        console.error("Error fetching NFTs:", error);
-        message.error("Failed to fetch NFTs. Please check console for details.");
+      console.error("Error fetching NFTs:", error);
+      message.error("Failed to fetch NFTs");
     }
-};
+  };
 
   const handleBuyClick = (nft: NFT) => {
+    const connectedAddress = (window as any).aptos?.account?.address;
+    if (connectedAddress && nft.owner.toLowerCase() === connectedAddress.toLowerCase()) {
+      message.error("You cannot buy your own NFT");
+      return;
+    }
+    
     setSelectedNft(nft);
     setIsBuyModalVisible(true);
   };
@@ -280,27 +326,97 @@ const MarketView: React.FC<MarketViewProps> = ({ marketplaceAddr }) => {
 
   const handleConfirmPurchase = async () => {
     if (!selectedNft) return;
-  
+
     try {
+      const connectedAddress = (window as any).aptos?.account?.address;
+      if (connectedAddress && selectedNft.owner.toLowerCase() === connectedAddress.toLowerCase()) {
+        Modal.error({
+          title: "Cannot Buy Own NFT",
+          content: "You cannot purchase your own NFT.",
+          okButtonProps: {
+            style: {
+              background: "rgba(15, 255, 196, 0.1)",
+              border: "1px solid #0fffc4",
+              color: "#0fffc4",
+              fontWeight: "bold",
+              height: "36px",
+              borderRadius: "8px"
+            }
+          },
+          style: {
+            top: '30%'
+          },
+          className: "custom-error-modal",
+          maskStyle: {
+            background: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(4px)'
+          }
+        });
+        setIsBuyModalVisible(false);
+        return;
+      }
+
       const priceInOctas = selectedNft.price * 100000000;
-  
+
       const entryFunctionPayload = {
         type: "entry_function_payload",
         function: `${marketplaceAddr}::nft_marketplace::purchase_nft`,
         type_arguments: [],
         arguments: [marketplaceAddr, selectedNft.id.toString(), priceInOctas.toString()],
       };
-  
+
       const response = await (window as any).aptos.signAndSubmitTransaction(entryFunctionPayload);
       await client.waitForTransaction(response.hash);
-  
+
       message.success("NFT purchased successfully!");
       setIsBuyModalVisible(false);
       handleFetchNfts(rarity === 'all' ? undefined : rarity);
-      console.log("signAndSubmitTransaction:", signAndSubmitTransaction);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error purchasing NFT:", error);
-      message.error("Failed to purchase NFT.");
+      
+      let errorTitle = "Transaction Failed";
+      let errorMessage = "Failed to purchase NFT.";
+
+      if (error.message?.includes('ECANNOT_BUY_OWN_NFT') || 
+          error.message?.includes('code: 402') || 
+          error.message?.includes('Cannot buy own NFT')) {
+        errorTitle = "Cannot Buy Own NFT";
+        errorMessage = "You cannot purchase your own NFT.";
+      } else if (error.message?.includes('ENFT_NOT_FOR_SALE') || 
+                 error.message?.includes('code: 400')) {
+        errorTitle = "NFT Not For Sale";
+        errorMessage = "This NFT is not available for purchase.";
+      } else if (error.message?.includes('EINSUFFICIENT_PAYMENT') || 
+                 error.message?.includes('code: 401')) {
+        errorTitle = "Insufficient Payment";
+        errorMessage = "The payment amount is insufficient to purchase this NFT.";
+      } else if (error.message?.includes('INSUFFICIENT_BALANCE')) {
+        errorTitle = "Insufficient Balance";
+        errorMessage = "You don't have enough balance to purchase this NFT.";
+      }
+
+      Modal.error({
+        title: errorTitle,
+        content: errorMessage,
+        okButtonProps: {
+          style: {
+            background: "rgba(15, 255, 196, 0.1)",
+            border: "1px solid #0fffc4",
+            color: "#0fffc4",
+            fontWeight: "bold",
+            height: "36px",
+            borderRadius: "8px"
+          }
+        },
+        style: {
+          top: '30%'
+        },
+        className: "custom-error-modal",
+        maskStyle: {
+          background: 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: 'blur(4px)'
+        }
+      });
     }
   };
 
@@ -375,6 +491,79 @@ const MarketView: React.FC<MarketViewProps> = ({ marketplaceAddr }) => {
     }
   };
 
+  // Update style untuk form fields
+  const formItemStyle = {
+    marginBottom: '24px',
+    background: 'rgba(15, 255, 196, 0.05)',
+    padding: '16px',
+    borderRadius: '12px',
+    border: '1px solid rgba(15, 255, 196, 0.1)'
+  };
+
+  const inputStyle = {
+    background: 'rgba(0, 0, 0, 0.2)',
+    border: '1px solid rgba(15, 255, 196, 0.2)',
+    color: '#fff',
+    borderRadius: '6px',
+    padding: '8px 12px',
+    width: '100%'
+  };
+
+  const labelStyle = {
+    color: '#0fffc4',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    marginBottom: '8px',
+    display: 'block'
+  };
+
+  const selectStyle = {
+    ...inputStyle,
+    '& .ant-select-selector': {
+      background: 'transparent !important',
+      border: 'none !important',
+      color: '#fff !important'
+    }
+  };
+
+  // Helper function untuk decode hex string
+  const decodeHexString = (hexString: string): string => {
+    if (typeof hexString !== 'string' || !hexString.startsWith('0x')) {
+      return '';
+    }
+    const bytes = new Uint8Array(hexString.length / 2 - 1);
+    for (let i = 2; i < hexString.length; i += 2) {
+      bytes[(i-2) / 2] = parseInt(hexString.substr(i, 2), 16);
+    }
+    return new TextDecoder().decode(bytes);
+  };
+
+  // Tambahkan fungsi helper untuk mengecek status auction
+  const getAuctionStatus = (auction: Auction) => {
+    const isActive = auction.is_active;
+    const isEnded = auction.end_time <= currentTime;
+    const hasBidder = auction.highest_bidder !== '0x0';
+    const isFailedAuction = isEnded && !hasBidder;
+
+    return {
+        isActive,
+        isEnded,
+        hasBidder,
+        isFailedAuction
+    };
+  };
+
+  // Update bagian render auction card
+  const renderAuctionCard = (auction: Auction) => {
+    const status = getAuctionStatus(auction);
+    
+    if (status.isFailedAuction) {
+        return null; // Tidak menampilkan auction yang gagal di marketplace
+    }
+
+    // ... kode render card yang sudah ada ...
+  };
+
   return (
     <div style={{ 
       padding: "24px", 
@@ -383,7 +572,14 @@ const MarketView: React.FC<MarketViewProps> = ({ marketplaceAddr }) => {
       minHeight: "calc(100vh - 64px)",
       overflowY: "auto"
     }}>
-      <Title level={2} style={{ textAlign: "center", marginBottom: "32px", color: "#0fffc4" }}>
+      <Title level={2} style={{ 
+        textAlign: "center", 
+        marginBottom: "32px",
+        color: "#0fffc4",
+        textShadow: "0 0 10px rgba(15, 255, 196, 0.5)",
+        fontWeight: "bold",
+        letterSpacing: "1px"
+      }}>
         NFT Marketplace
       </Title>
 
@@ -541,8 +737,13 @@ const MarketView: React.FC<MarketViewProps> = ({ marketplaceAddr }) => {
                             fontWeight: "bold"
                           }}
                           onClick={() => handleBuyClick(nft)}
+                          disabled={(window as any).aptos?.account?.address && 
+                            nft.owner.toLowerCase() === (window as any).aptos?.account?.address.toLowerCase()}
                         >
-                          Buy Now
+                          {(window as any).aptos?.account?.address && 
+                           nft.owner.toLowerCase() === (window as any).aptos?.account?.address.toLowerCase() 
+                            ? "Your NFT" 
+                            : "Buy Now"}
                         </Button>
                       )
                     ]}
@@ -751,9 +952,10 @@ const MarketView: React.FC<MarketViewProps> = ({ marketplaceAddr }) => {
             textAlign: "center",
             fontSize: "24px",
             fontWeight: "bold",
-            textShadow: "0 0 10px rgba(15, 255, 196, 0.5)"
+            textShadow: "0 0 10px rgba(15, 255, 196, 0.5)",
+            letterSpacing: "1px"
           }}>
-            Confirm Purchase
+            Mint NFT
           </div>
         }
         visible={isBuyModalVisible}

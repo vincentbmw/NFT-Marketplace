@@ -383,3 +383,353 @@ h2.ant-typography {
 .ant-modal-close:hover {
   color: #fff !important;
 }
+
+/* Navbar Styles */
+.connect-button:hover {
+  background: rgba(15, 255, 196, 0.2) !important;
+  box-shadow: 0 0 12px rgba(15, 255, 196, 0.3);
+}
+
+.logout-button:hover {
+  background: rgba(255, 77, 79, 0.1) !important;
+}
+
+.ant-menu-item:hover {
+  color: #0fffc4 !important;
+  text-shadow: 0 0 8px rgba(15, 255, 196, 0.5);
+}
+
+.ant-menu-item-selected {
+  text-shadow: 0 0 8px rgba(15, 255, 196, 0.5);
+}
+
+/* Override Wallet Selector styles */
+.ant-btn.ant-btn-default.wallet-button {
+  background: rgba(15, 255, 196, 0.1) !important;
+  border: 1px solid #0fffc4 !important;
+  color: #0fffc4 !important;
+  height: 40px !important;
+  padding: 0 20px !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  border-radius: 20px !important;
+  transition: all 0.3s ease !important;
+}
+
+.ant-btn.ant-btn-default.wallet-button:hover {
+  background: rgba(15, 255, 196, 0.2) !important;
+  box-shadow: 0 0 12px rgba(15, 255, 196, 0.3);
+}
+
+/* Tambahkan style berikut untuk form mint NFT */
+.ant-select-dropdown {
+  background: rgba(0, 0, 30, 0.95) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(15, 255, 196, 0.1);
+  border-radius: 8px;
+}
+
+.ant-select-item {
+  color: #fff !important;
+  transition: all 0.3s ease;
+}
+
+.ant-select-item-option-selected {
+  background: rgba(15, 255, 196, 0.1) !important;
+  color: #0fffc4 !important;
+}
+
+.ant-select-item-option:hover {
+  background: rgba(15, 255, 196, 0.05) !important;
+}
+
+.ant-select-selection-placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.ant-select:not(.ant-select-disabled):hover .ant-select-selector {
+  border-color: #0fffc4 !important;
+}
+
+.ant-select-focused:not(.ant-select-disabled).ant-select:not(.ant-select-customize-input) .ant-select-selector {
+  border-color: #0fffc4 !important;
+  box-shadow: 0 0 8px rgba(15, 255, 196, 0.2) !important;
+}
+
+.ant-form-item-required::before {
+  color: #0fffc4 !important;
+}
+
+.ant-input-number {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid rgba(15, 255, 196, 0.2) !important;
+  color: #fff !important;
+}
+
+.ant-input-number:hover, .ant-input-number-focused {
+  border-color: #0fffc4 !important;
+  box-shadow: 0 0 8px rgba(15, 255, 196, 0.2) !important;
+}
+
+.ant-input-number-handler-wrap {
+  background: rgba(0, 0, 0, 0.4) !important;
+}
+
+.ant-input-number-handler:hover {
+  background: rgba(15, 255, 196, 0.1) !important;
+}
+
+.ant-input-number-handler-up-inner,
+.ant-input-number-handler-down-inner {
+  color: #0fffc4 !important;
+}
+
+/* Style untuk form item yang required */
+.ant-form-item-required::before {
+  color: #0fffc4 !important;
+}
+
+/* Style untuk label form */
+.ant-form-item-label > label {
+  color: #0fffc4 !important;
+}
+
+/* Style untuk input */
+.ant-input {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid rgba(15, 255, 196, 0.2) !important;
+  color: #fff !important;
+}
+
+.ant-input:hover, .ant-input:focus {
+  border-color: #0fffc4 !important;
+  box-shadow: 0 0 8px rgba(15, 255, 196, 0.2) !important;
+}
+
+/* Style untuk placeholder */
+.ant-input::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Tambahkan style berikut untuk modal title dan select */
+.ant-modal-title {
+  color: #0fffc4 !important;
+  text-align: center;
+  font-size: 24px;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(15, 255, 196, 0.5);
+}
+
+/* Style untuk Select/Dropdown */
+.ant-select-selector {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid rgba(15, 255, 196, 0.2) !important;
+  color: #fff !important;
+}
+
+.ant-select {
+  color: #fff !important;
+}
+
+.ant-select-selection-placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.ant-select-arrow {
+  color: #0fffc4 !important;
+}
+
+.ant-select:not(.ant-select-disabled):hover .ant-select-selector {
+  border-color: #0fffc4 !important;
+}
+
+.ant-select-focused:not(.ant-select-disabled).ant-select:not(.ant-select-customize-input) .ant-select-selector {
+  border-color: #0fffc4 !important;
+  box-shadow: 0 0 8px rgba(15, 255, 196, 0.2) !important;
+}
+
+/* Style untuk required asterisk */
+.ant-form-item-required::before {
+  color: #0fffc4 !important;
+}
+
+/* Style untuk label */
+.ant-form-item-label > label {
+  color: #0fffc4 !important;
+  font-size: 14px !important;
+  font-weight: bold !important;
+}
+
+/* Style untuk Mint NFT button */
+.mint-nft-button {
+  background: linear-gradient(45deg, #0fffc4, #0ff9fc) !important;
+  border: none !important;
+  color: #000 !important;
+  font-weight: bold !important;
+  height: 40px !important;
+  border-radius: 20px !important;
+  padding: 0 32px !important;
+  font-size: 16px !important;
+  text-shadow: none !important;
+  box-shadow: 0 4px 12px rgba(15, 255, 196, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.mint-nft-button:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(15, 255, 196, 0.4) !important;
+}
+
+/* Error Modal Styling */
+.error-modal .ant-modal-content {
+  background: rgba(13, 17, 28, 0.95) !important;
+  border: 1px solid rgba(15, 255, 196, 0.2) !important;
+  box-shadow: 0 0 20px rgba(15, 255, 196, 0.1);
+}
+
+.error-modal .ant-modal-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(15, 255, 196, 0.1) !important;
+}
+
+.error-modal .ant-modal-title {
+  color: #0fffc4 !important;
+  text-align: center !important;
+  font-size: 20px !important;
+  font-weight: bold !important;
+  padding: 16px 0 !important;
+}
+
+.error-modal .ant-modal-body {
+  color: rgba(255, 255, 255, 0.85) !important;
+  text-align: center !important;
+  padding: 24px !important;
+  font-size: 16px !important;
+  background: rgba(15, 255, 196, 0.05) !important;
+  border-radius: 4px !important;
+  margin: 8px 16px !important;
+}
+
+.error-modal .ant-modal-footer {
+  border-top: none !important;
+  padding: 16px !important;
+  text-align: center !important;
+}
+
+.error-modal .ant-btn-primary {
+  background: rgba(15, 255, 196, 0.1) !important;
+  border: 1px solid #0fffc4 !important;
+  color: #0fffc4 !important;
+  font-weight: bold !important;
+  height: 36px !important;
+  border-radius: 4px !important;
+  min-width: 80px !important;
+}
+
+.error-modal .ant-btn-primary:hover {
+  background: rgba(15, 255, 196, 0.2) !important;
+  box-shadow: 0 0 10px rgba(15, 255, 196, 0.2);
+}
+
+.error-modal .ant-modal-close {
+  color: rgba(15, 255, 196, 0.5) !important;
+}
+
+.error-modal .ant-modal-close:hover {
+  color: #0fffc4 !important;
+}
+
+/* Custom Error Modal Styling */
+.custom-error-modal .ant-modal-content {
+  background: rgba(13, 17, 28, 0.95) !important;
+  border: 1px solid rgba(15, 255, 196, 0.2) !important;
+  box-shadow: 0 0 20px rgba(15, 255, 196, 0.1);
+  backdrop-filter: blur(10px);
+  position: relative;
+  padding-bottom: 80px !important;
+}
+
+.custom-error-modal .ant-modal-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(15, 255, 196, 0.1) !important;
+  padding: 16px 24px !important;
+}
+
+.custom-error-modal .ant-modal-title {
+  color: #0fffc4 !important;
+  text-align: center !important;
+  font-size: 20px !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 10px rgba(15, 255, 196, 0.3);
+}
+
+.custom-error-modal .ant-modal-body {
+  color: #0fffc4 !important;
+  text-align: center !important;
+  padding: 24px !important;
+  font-size: 16px !important;
+  background: rgba(15, 255, 196, 0.05) !important;
+  border-radius: 8px !important;
+  margin: 16px !important;
+  border: 1px solid rgba(15, 255, 196, 0.1);
+  text-shadow: 0 0 5px rgba(15, 255, 196, 0.2);
+  margin-bottom: 40px !important;
+}
+
+.custom-error-modal .ant-modal-footer {
+  display: none !important;
+}
+
+.custom-error-modal .ant-btn {
+  background: rgba(15, 255, 196, 0.1) !important;
+  border: 1px solid #0fffc4 !important;
+  color: #0fffc4 !important;
+  font-weight: bold !important;
+  height: 36px !important;
+  border-radius: 8px !important;
+  min-width: 100px !important;
+  transition: all 0.3s ease !important;
+  position: absolute !important;
+  bottom: 20px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+.custom-error-modal .ant-btn:hover {
+  background: rgba(15, 255, 196, 0.2) !important;
+  box-shadow: 0 0 15px rgba(15, 255, 196, 0.3) !important;
+  transform: translate(-50%, -1px) !important;
+}
+
+.custom-error-modal .ant-modal-close {
+  color: rgba(15, 255, 196, 0.5) !important;
+  transition: all 0.3s ease;
+}
+
+.custom-error-modal .ant-modal-close:hover {
+  color: #0fffc4 !important;
+  text-shadow: 0 0 8px rgba(15, 255, 196, 0.5);
+}
+
+.custom-error-modal .ant-modal-close-x {
+  width: 46px !important;
+  height: 46px !important;
+  line-height: 46px !important;
+}
+
+/* Tambahan untuk memastikan semua teks dalam modal menggunakan warna tema */
+.custom-error-modal .ant-modal-confirm-title,
+.custom-error-modal .ant-modal-confirm-content {
+  color: #0fffc4 !important;
+  text-shadow: 0 0 5px rgba(15, 255, 196, 0.2);
+}
+
+/* Override antd Menu border styles */
+.ant-menu-horizontal {
+  border-bottom: none !important;
+}
+
+.ant-menu-horizontal > .ant-menu-item::after,
+.ant-menu-horizontal > .ant-menu-submenu::after {
+  border-bottom: none !important;
+}

@@ -4,7 +4,7 @@ import { WalletSelector } from "@aptos-labs/wallet-adapter-ant-design";
 import "@aptos-labs/wallet-adapter-ant-design/dist/index.css";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { AptosClient } from "aptos";
-import { DownOutlined, LogoutOutlined } from "@ant-design/icons";
+import { DownOutlined, LogoutOutlined, ShopOutlined, WalletOutlined } from "@ant-design/icons";
 import { Link, useLocation } from "react-router-dom";
 
 const { Header } = Layout;
@@ -23,49 +23,81 @@ const NavBar: React.FC<NavBarProps> = ({ onMintNFTClick }) => {
   const location = useLocation();
 
   useEffect(() => {
+    let mounted = true;
+
     const checkWalletConnection = async () => {
       try {
-        if (wallet && connected) {
+        if (!mounted) return;
+        
+        setIsLoading(true);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        if (mounted && wallet && connected && account?.address) {
           await fetchBalance();
         }
       } catch (error) {
         console.error("Wallet connection error:", error);
+        if (mounted && disconnect) {
+          try {
+            await disconnect();
+          } catch (disconnectError) {
+            console.error("Error disconnecting wallet:", disconnectError);
+          }
+        }
       } finally {
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     checkWalletConnection();
-  }, [wallet, connected]);
+
+    return () => {
+      mounted = false;
+    };
+  }, [wallet, connected, disconnect, account?.address]);
 
   const fetchBalance = async () => {
-    if (account) {
-      try {
-        const resources = await client.getAccountResources(account.address);
-        const accountResource = resources.find(
-          (r) => r.type === "0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>"
-        );
-        if (accountResource) {
-          const balanceValue = (accountResource.data as any).coin.value;
-          setBalance(balanceValue ? parseInt(balanceValue) / 100000000 : 0);
-        } else {
-          setBalance(0);
-        }
-      } catch (error) {
-        console.error("Error fetching balance:", error);
+    if (!account?.address) return;
+    
+    try {
+      const resources = await client.getAccountResources(account.address);
+      const accountResource = resources.find(
+        (r) => r.type === "0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>"
+      );
+      
+      if (accountResource) {
+        const balanceValue = (accountResource.data as any).coin.value;
+        setBalance(balanceValue ? parseInt(balanceValue) / 100000000 : 0);
+      } else {
         setBalance(0);
       }
+    } catch (error) {
+      console.error("Error fetching balance:", error);
+      setBalance(0);
     }
   };
 
   const handleLogout = async () => {
     try {
-      await disconnect();
-      setBalance(null);
-      message.success("Disconnected from wallet");
+      if (disconnect) {
+        await disconnect();
+        setBalance(null);
+        message.success("Disconnected from wallet");
+      }
     } catch (error) {
       console.error("Error disconnecting wallet:", error);
       message.error("Failed to disconnect from wallet");
+    }
+  };
+
+  const handleWalletError = (error: any) => {
+    console.error("Wallet error:", error);
+    if (error.message?.includes("already connected")) {
+      fetchBalance();
+    } else {
+      message.error("Wallet connection error. Please try again.");
     }
   };
 
@@ -76,7 +108,7 @@ const NavBar: React.FC<NavBarProps> = ({ onMintNFTClick }) => {
   };
 
   if (isLoading) {
-    return null; // atau tampilkan loading spinner
+    return null;
   }
 
   return (
@@ -85,24 +117,74 @@ const NavBar: React.FC<NavBarProps> = ({ onMintNFTClick }) => {
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        backgroundColor: 'transparent',
-        padding: "0 20px",
-        borderBottom: '1px solid rgba(255,255,255,0.1)',
+        background: "rgba(0, 0, 30, 0.8)",
+        backdropFilter: "blur(10px)",
+        padding: "0 24px",
+        height: "72px",
+        position: "sticky",
+        top: 0,
+        zIndex: 1000,
+        borderBottom: '1px solid rgba(15, 255, 196, 0.1)',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <img src="/Aptos_Primary_WHT.png" alt="Aptos Logo" style={{ height: '40px', marginRight: 16 }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <img 
+            src="/Aptos_Primary_WHT.png" 
+            alt="Aptos Logo" 
+            style={{ 
+              height: '40px', 
+              marginRight: '16px',
+              filter: 'drop-shadow(0 0 8px rgba(15, 255, 196, 0.3))'
+            }} 
+          />
+        </div>
+
         <Menu 
-          theme="dark" 
           mode="horizontal" 
           selectedKeys={[getSelectedKey()]}
-          style={{ backgroundColor: 'transparent', borderBottom: 'none' }}
+          style={{ 
+            background: 'transparent', 
+            borderBottom: 'none',
+            display: 'flex',
+            gap: '8px'
+          }}
         >
-          <Menu.Item key="marketplace">
-            <Link to="/" style={{ color: "#fff" }}>Marketplace</Link>
+          <Menu.Item 
+            key="marketplace"
+            icon={<ShopOutlined style={{ fontSize: '18px' }} />}
+            style={{
+              color: getSelectedKey() === 'marketplace' ? '#0fffc4' : '#fff',
+              borderBottom: getSelectedKey() === 'marketplace' ? '2px solid #0fffc4' : 'none',
+              margin: '0 8px',
+              padding: '0 16px',
+              height: '72px',
+              display: 'flex',
+              alignItems: 'center',
+              fontSize: '16px',
+              fontWeight: getSelectedKey() === 'marketplace' ? 'bold' : 'normal',
+              transition: 'all 0.1s ease'
+            }}
+          >
+            <Link to="/">Marketplace</Link>
           </Menu.Item>
-          <Menu.Item key="my-collection">
-            <Link to="/my-nfts" style={{ color: "#fff" }}>My Collection</Link>
+          <Menu.Item 
+            key="my-collection"
+            icon={<WalletOutlined style={{ fontSize: '18px' }} />}
+            style={{
+              color: getSelectedKey() === 'my-collection' ? '#0fffc4' : '#fff',
+              borderBottom: getSelectedKey() === 'my-collection' ? '2px solid #0fffc4' : 'none',
+              margin: '0 8px',
+              padding: '0 16px',
+              height: '72px',
+              display: 'flex',
+              alignItems: 'center',
+              fontSize: '16px',
+              fontWeight: getSelectedKey() === 'my-collection' ? 'bold' : 'normal',
+              transition: 'all 0.1s ease'
+            }}
+          >
+            <Link to="/my-nfts">My Collection</Link>
           </Menu.Item>
         </Menu>
       </div>
@@ -113,50 +195,65 @@ const NavBar: React.FC<NavBarProps> = ({ onMintNFTClick }) => {
             overlay={
               <Menu
                 style={{
-                  background: 'rgba(0, 0, 30, 0.9)',
+                  background: 'rgba(0, 0, 30, 0.95)',
                   backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  border: '1px solid rgba(15, 255, 196, 0.1)',
+                  borderRadius: '12px',
+                  padding: '8px',
+                  minWidth: '240px'
                 }}
               >
-                <Menu.Item key="address" style={{ color: '#fff' }}>
-                  <Text strong style={{ color: '#0fffc4' }}>Address:</Text> <br />
-                  <Text copyable style={{ color: '#fff' }}>{account.address}</Text>
+                <Menu.Item key="address" style={{ padding: '12px 16px' }}>
+                  <Text strong style={{ color: '#0fffc4', display: 'block', marginBottom: '4px' }}>Address</Text>
+                  <Text copyable style={{ color: '#fff', fontSize: '14px' }}>{account.address}</Text>
                 </Menu.Item>
-                <Menu.Item key="network" style={{ color: '#fff' }}>
-                  <Text strong style={{ color: '#0fffc4' }}>Network:</Text>{' '}
-                  {network ? network.name : "Unknown"}
+                <Menu.Item key="network" style={{ padding: '12px 16px' }}>
+                  <Text strong style={{ color: '#0fffc4', display: 'block', marginBottom: '4px' }}>Network</Text>
+                  <Text style={{ color: '#fff', fontSize: '14px' }}>{network ? network.name : "Unknown"}</Text>
                 </Menu.Item>
-                <Menu.Item key="balance" style={{ color: '#fff' }}>
-                  <Text strong style={{ color: '#0fffc4' }}>Balance:</Text>{' '}
-                  {balance !== null ? `${balance} APT` : "Loading..."}
+                <Menu.Item key="balance" style={{ padding: '12px 16px' }}>
+                  <Text strong style={{ color: '#0fffc4', display: 'block', marginBottom: '4px' }}>Balance</Text>
+                  <Text style={{ color: '#fff', fontSize: '14px' }}>
+                    {balance !== null ? `${balance} APT` : "Loading..."}
+                  </Text>
                 </Menu.Item>
-                <Menu.Divider style={{ borderColor: 'rgba(255,255,255,0.1)' }} />
+                <Menu.Divider style={{ borderColor: 'rgba(15, 255, 196, 0.1)', margin: '4px 0' }} />
                 <Menu.Item 
                   key="logout" 
-                  icon={<LogoutOutlined style={{ color: '#0fffc4' }} />} 
+                  icon={<LogoutOutlined style={{ color: '#ff4d4f' }} />}
                   onClick={handleLogout}
-                  style={{ color: '#fff' }}
+                  style={{ 
+                    color: '#ff4d4f',
+                    padding: '12px 16px',
+                    transition: 'all 0.3s ease'
+                  }}
+                  className="logout-button"
                 >
                   Disconnect
                 </Menu.Item>
               </Menu>
             }
             trigger={['click']}
+            placement="bottomRight"
           >
             <Button
               style={{
                 background: "rgba(15, 255, 196, 0.1)",
                 border: "1px solid #0fffc4",
                 color: "#0fffc4",
-                fontWeight: "bold",
-                boxShadow: 'none',
+                height: '40px',
+                padding: '0 20px',
+                fontSize: '15px',
+                fontWeight: "500",
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px'
+                gap: '8px',
+                borderRadius: '20px',
+                transition: 'all 0.3s ease'
               }}
               className="connect-button"
             >
-              Connected <DownOutlined />
+              Connected <DownOutlined style={{ fontSize: '12px' }} />
             </Button>
           </Dropdown>
         ) : (

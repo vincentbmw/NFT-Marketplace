@@ -15,6 +15,11 @@ module NFTMarketplace::nft_marketplace {
     const EBID_TOO_LOW: u64 = 1002;
     const ESELLER_CANNOT_BID: u64 = 1003;
     const EINSUFFICIENT_FUNDS: u64 = 1004;
+    const EDUPLICATE_NFT_NAME: u64 = 1005;
+    const EDUPLICATE_NFT_URI: u64 = 1006;
+    const ENFT_NOT_FOR_SALE: u64 = 400;
+    const EINSUFFICIENT_PAYMENT: u64 = 401;
+    const ECANNOT_BUY_OWN_NFT: u64 = 402;
     
     // TODO# 2: Define NFT Structure
     struct NFT has store, key {
@@ -56,9 +61,58 @@ module NFTMarketplace::nft_marketplace {
         exists<Marketplace>(marketplace_addr)
     }
 
+    // Fungsi helper untuk mengecek apakah nama NFT sudah ada
+    fun is_nft_name_exists(marketplace: &Marketplace, name: &vector<u8>): bool {
+        let i = 0;
+        let len = vector::length(&marketplace.nfts);
+        
+        while (i < len) {
+            let nft = vector::borrow(&marketplace.nfts, i);
+            if (nft.name == *name) {
+                return true
+            };
+            i = i + 1;
+        };
+        false
+    }
+
+    // Tambahkan fungsi helper untuk mengecek URI
+    fun is_nft_uri_exists(marketplace: &Marketplace, uri: &vector<u8>): bool {
+        let i = 0;
+        let len = vector::length(&marketplace.nfts);
+        
+        while (i < len) {
+            let nft = vector::borrow(&marketplace.nfts, i);
+            if (nft.uri == *uri) {
+                return true
+            };
+            i = i + 1;
+        };
+        false
+    }
+
     // TODO# 8: Mint New NFT
-    public entry fun mint_nft(account: &signer, name: vector<u8>, description: vector<u8>, uri: vector<u8>, rarity: u8) acquires Marketplace {
-        let marketplace = borrow_global_mut<Marketplace>(signer::address_of(account));
+    public entry fun mint_nft_to_marketplace(
+        account: &signer,
+        marketplace_addr: address,
+        name: vector<u8>, 
+        description: vector<u8>, 
+        uri: vector<u8>, 
+        rarity: u8
+    ) acquires Marketplace {
+        // Validasi input
+        assert!(vector::length(&name) > 0, 1000);
+        assert!(vector::length(&description) > 0, 1001);
+        assert!(vector::length(&uri) > 0, 1002);
+        assert!(rarity >= 1 && rarity <= 4, 1003); // Validasi rarity range
+
+        let marketplace = borrow_global_mut<Marketplace>(marketplace_addr);
+        
+        // Check if NFT name already exists
+        assert!(!is_nft_name_exists(marketplace, &name), EDUPLICATE_NFT_NAME);
+        // Check if NFT URI already exists
+        assert!(!is_nft_uri_exists(marketplace, &uri), EDUPLICATE_NFT_URI);
+
         let nft_id = vector::length(&marketplace.nfts);
 
         let new_nft = NFT {
@@ -73,6 +127,17 @@ module NFTMarketplace::nft_marketplace {
         };
 
         vector::push_back(&mut marketplace.nfts, new_nft);
+    }
+
+    // Update fungsi mint_nft untuk backward compatibility
+    public entry fun mint_nft(
+        account: &signer,
+        name: vector<u8>, 
+        description: vector<u8>, 
+        uri: vector<u8>, 
+        rarity: u8
+    ) acquires Marketplace {
+        mint_nft_to_marketplace(account, signer::address_of(account), name, description, uri, rarity)
     }
 
     // TODO# 9: View NFT Details
@@ -122,20 +187,23 @@ module NFTMarketplace::nft_marketplace {
         let marketplace = borrow_global_mut<Marketplace>(marketplace_addr);
         let nft_ref = vector::borrow_mut(&mut marketplace.nfts, nft_id);
 
-        assert!(nft_ref.for_sale, 400); // NFT is not for sale
-        assert!(payment >= nft_ref.price, 401); // Insufficient payment
-        assert!(nft_ref.owner != signer::address_of(account), 402); // Cannot buy own NFT
+        // Validasi dengan error code yang spesifik
+        assert!(nft_ref.for_sale, ENFT_NOT_FOR_SALE);
+        assert!(payment >= nft_ref.price, EINSUFFICIENT_PAYMENT);
+        
+        let buyer_address = signer::address_of(account);
+        assert!(nft_ref.owner != buyer_address, ECANNOT_BUY_OWN_NFT);
 
         // Calculate marketplace fee
         let fee = (nft_ref.price * MARKETPLACE_FEE_PERCENT) / 100;
         let seller_revenue = payment - fee;
 
-        // Transfer payment to the seller and fee to the marketplace
+        // Transfer payment
         coin::transfer<AptosCoin>(account, nft_ref.owner, seller_revenue);
         coin::transfer<AptosCoin>(account, marketplace_addr, fee);
 
         // Transfer ownership
-        nft_ref.owner = signer::address_of(account);
+        nft_ref.owner = buyer_address;
         nft_ref.for_sale = false;
         nft_ref.price = 0;
     }
@@ -292,12 +360,19 @@ module NFTMarketplace::nft_marketplace {
     ) acquires Marketplace {
         let marketplace = borrow_global_mut<Marketplace>(marketplace_addr);
         let nft = vector::borrow_mut(&mut marketplace.nfts, nft_id);
-        assert!(nft.owner == signer::address_of(account), 1); // Only owner can create auction
-        assert!(!nft.for_sale, 2); // NFT should not be listed for sale
+        
+        // Validasi kepemilikan dan status NFT
+        let sender = signer::address_of(account);
+        assert!(nft.owner == sender, error::permission_denied(1)); // Harus pemilik NFT
+        assert!(!nft.for_sale, error::invalid_state(2)); // NFT tidak boleh dalam status for_sale
+
+        // Validasi durasi
+        assert!(duration >= 300 && duration <= 86400, 3); // Durasi antara 5 menit dan 1 hari
+        assert!(start_price > 0, 4); // Harga awal harus lebih dari 0
 
         let auction = Auction {
             nft_id,
-            seller: signer::address_of(account),
+            seller: sender,
             start_price,
             current_price: start_price,
             highest_bidder: @0x0,
@@ -305,8 +380,10 @@ module NFTMarketplace::nft_marketplace {
             is_active: true
         };
 
-        vector::push_back(&mut marketplace.auctions, auction);
+        // Set NFT status menjadi for_sale
         nft.for_sale = true;
+
+        vector::push_back(&mut marketplace.auctions, auction);
     }
 
     public entry fun place_bid(
@@ -358,24 +435,44 @@ module NFTMarketplace::nft_marketplace {
         let marketplace = borrow_global_mut<Marketplace>(marketplace_addr);
         let auction = vector::borrow_mut(&mut marketplace.auctions, auction_id);
         
-        assert!(auction.is_active, 1); // Auction must be active
-        assert!(timestamp::now_seconds() >= auction.end_time, 2); // Auction must have ended
-
-        // Transfer NFT to highest bidder
+        // Hanya seller atau marketplace admin yang bisa mengakhiri auction
+        let sender = signer::address_of(account);
+        assert!(
+            sender == auction.seller || sender == marketplace_addr, 
+            error::permission_denied(1)
+        );
+        
+        // Ambil referensi NFT
         let nft = vector::borrow_mut(&mut marketplace.nfts, auction.nft_id);
-        nft.owner = auction.highest_bidder;
+        
+        // Simpan data yang diperlukan sebelum menutup auction
+        let has_bidder = auction.highest_bidder != @0x0;
+        let winning_bidder = auction.highest_bidder;
+        let final_price = auction.current_price;
+        let seller_address = auction.seller;
+
+        // Tutup auction terlebih dahulu
+        auction.is_active = false;
+
+        // Reset status for_sale NFT
         nft.for_sale = false;
 
-        // Calculate and transfer marketplace fee
-        let fee_amount = (auction.current_price * MARKETPLACE_FEE_PERCENT) / 100;
-        let seller_amount = auction.current_price - fee_amount;
+        // Proses transfer berdasarkan ada tidaknya bidder
+        if (has_bidder) {
+            // Transfer NFT ke pemenang
+            nft.owner = winning_bidder;
 
-        // Transfer funds
-        coin::transfer<AptosCoin>(account, auction.seller, seller_amount);
-        coin::transfer<AptosCoin>(account, marketplace_addr, fee_amount);
+            // Hitung fee dan transfer dana
+            let fee_amount = (final_price * MARKETPLACE_FEE_PERCENT) / 100;
+            let seller_amount = final_price - fee_amount;
 
-        // Close auction
-        auction.is_active = false;
+            // Transfer dana ke seller dan marketplace
+            coin::transfer<AptosCoin>(account, seller_address, seller_amount);
+            coin::transfer<AptosCoin>(account, marketplace_addr, fee_amount);
+        } else {
+            // Kembalikan NFT ke seller jika tidak ada bidder
+            nft.owner = seller_address;
+        };
     }
 
     #[view]
@@ -461,5 +558,24 @@ module NFTMarketplace::nft_marketplace {
         };
 
         (total_nfts, nfts_for_sale)
+    }
+
+    // Tambahkan fungsi cancel_listing
+    public entry fun cancel_listing(
+        account: &signer,
+        marketplace_addr: address,
+        nft_id: u64
+    ) acquires Marketplace {
+        let marketplace = borrow_global_mut<Marketplace>(marketplace_addr);
+        let nft = vector::borrow_mut(&mut marketplace.nfts, nft_id);
+        
+        // Validasi kepemilikan dan status NFT
+        let sender = signer::address_of(account);
+        assert!(nft.owner == sender, error::permission_denied(1)); // Harus pemilik NFT
+        assert!(nft.for_sale, error::invalid_state(2)); // NFT harus dalam status for_sale
+
+        // Reset status penjualan
+        nft.for_sale = false;
+        nft.price = 0;
     }
 }
