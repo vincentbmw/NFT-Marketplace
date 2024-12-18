@@ -5,7 +5,6 @@
   
   <p>A decentralized NFT marketplace built on the Aptos blockchain with React, TypeScript and Move</p>
 
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
   [![Aptos](https://img.shields.io/badge/Aptos-000000?style=flat&logo=aptos&logoColor=white)](https://aptoslabs.com/)
   [![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)](https://reactjs.org/)
   [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -159,19 +158,9 @@ cd frontend
 npm install
 ```
 
-3. **Configure Environment**
+3. **Start Development Server**
 ```bash
-# Create .env file in frontend directory
-cp .env.example .env
-
-# Update environment variables
-REACT_APP_APTOS_NODE_URL=https://fullnode.testnet.aptoslabs.com/v1
-REACT_APP_APTOS_NETWORK=devnet
-```
-
-4. **Start Development Server**
-```bash
-npm run dev
+npm start
 ```
 
 ## Project Structure
